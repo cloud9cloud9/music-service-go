@@ -1,0 +1,409 @@
+basePath: /api/v1
+definitions:
+  models.CreatePlaylistDto:
+    properties:
+      name:
+        type: string
+    type: object
+  models.LoginDto:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.Playlist:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      songs:
+        items:
+          $ref: '#/definitions/models.Song'
+        type: array
+      user_id:
+        type: integer
+    type: object
+  models.RegisterDto:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.Song:
+    properties:
+      album:
+        type: string
+      album_cover:
+        type: string
+      artist:
+        type: string
+      duration:
+        type: integer
+      external_url:
+        type: string
+      id:
+        type: string
+      popularity:
+        type: integer
+      preview_url:
+        type: string
+      release_date:
+        type: string
+      title:
+        type: string
+    type: object
+  models.UpdatePlaylistDto:
+    properties:
+      name:
+        type: string
+    type: object
+host: localhost:8082
+info:
+  contact: {}
+  description: This is a sample server for managing users/playlists and songs.
+  title: Music API
+  version: "1.0"
+paths:
+  /api/v1/login:
+    post:
+      consumes:
+      - application/json
+      description: User authentication
+      operationId: login
+      parameters:
+      - description: User credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: token
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid parsing JSON
+          schema: {}
+        "500":
+          description: internal server error
+          schema: {}
+      summary: User Login
+      tags:
+      - auth
+  /api/v1/register:
+    post:
+      consumes:
+      - application/json
+      description: User registration
+      operationId: register
+      parameters:
+      - description: Register credentials
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid parsing JSON
+          schema: {}
+        "500":
+          description: internal Server Error
+          schema: {}
+      summary: Register
+      tags:
+      - auth
+  /ping:
+    get:
+      consumes:
+      - application/json
+      description: Send request to server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: pong
+          schema:
+            type: string
+      summary: Ping server
+      tags:
+      - ping
+  /playlist:
+    get:
+      consumes:
+      - application/json
+      description: Get all playlists for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlists
+          schema:
+            items:
+              $ref: '#/definitions/models.Playlist'
+            type: array
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get all playlists
+      tags:
+      - playlist
+    post:
+      consumes:
+      - application/json
+      description: Creates a new playlist for the authenticated user
+      parameters:
+      - description: Playlist creation dto
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePlaylistDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid parsing JSON
+          schema: {}
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Create playlist
+      tags:
+      - playlist
+  /playlist/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete playlist by id
+      parameters:
+      - description: Playlist id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist deleted
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid playlist id
+          schema: {}
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete playlist by id
+      tags:
+      - playlist
+    get:
+      consumes:
+      - application/json
+      description: Get playlist by id
+      parameters:
+      - description: Playlist id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist
+          schema:
+            $ref: '#/definitions/models.Playlist'
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get playlist by id
+      tags:
+      - playlist
+    put:
+      consumes:
+      - application/json
+      description: Update playlist by id
+      parameters:
+      - description: Playlist id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Playlist update dto
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePlaylistDto'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Playlist updated
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: invalid parsing JSON
+          schema: {}
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Update playlist by id
+      tags:
+      - playlist
+  /playlist/{playlistId}/tracks:
+    get:
+      consumes:
+      - application/json
+      description: Get tracks from playlist
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: playlistId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tracks
+          schema:
+            items:
+              $ref: '#/definitions/models.Song'
+            type: array
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get tracks from playlist
+      tags:
+      - tracks
+  /tracks/{trackId}:
+    get:
+      consumes:
+      - application/json
+      description: Get track from spotify
+      parameters:
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track
+          schema:
+            $ref: '#/definitions/models.Song'
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Get track from spotify
+      tags:
+      - tracks
+  /tracks/{trackId}/playlist/{playlistId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete track from playlist
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: playlistId
+        required: true
+        type: integer
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track removed from playlist
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Delete track from playlist
+      tags:
+      - tracks
+    post:
+      consumes:
+      - application/json
+      description: Insert track to playlist
+      parameters:
+      - description: Playlist ID
+        in: path
+        name: playlistId
+        required: true
+        type: integer
+      - description: Track ID
+        in: path
+        name: trackId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Track
+          schema:
+            $ref: '#/definitions/models.Song'
+        "500":
+          description: internal server error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Insert track
+      tags:
+      - tracks
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

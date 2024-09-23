@@ -1,0 +1,39 @@
+version: '3'
+
+tasks:
+  build:
+    desc: "Build the music service"
+    cmds:
+      - "go build -o ./.bin/music ./cmd/main.go"
+    sources:
+      - "cmd/main.go"
+    generates:
+      - ".bin/music"
+
+  run:
+    desc: "Run the music service"
+    deps:
+      - build
+    cmds:
+      - ".bin/music.exe"
+
+  db-up:
+    desc: "Database up"
+    cmds:
+      - "docker-compose up -d"
+
+  db-down:
+    desc: "Database down"
+    cmds:
+      - "docker-compose down"
+
+  migrate-up:
+    desc: "Migrate up"
+    cmds:
+      - 'migrate -path ./schema -database "mysql://root:root22@tcp(127.0.0.1:3306)/music" up'
+
+
+  migrate-down:
+    desc: "Migrate down"
+    cmds:
+      - 'migrate -path ./schema -database "mysql://root:root22@tcp(127.0.0.1:3306)/music" down'

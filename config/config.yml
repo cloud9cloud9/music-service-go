@@ -1,0 +1,18 @@
+mysql:
+  username: root
+  password: ${MYSQL_ROOT_PASSWORD}
+  net: tcp
+  addr: 127.0.0.1:3306
+  db_name: ${MYSQL_DATABASE}
+  db_uri: ${MYSQL_URI}
+
+server:
+  port: ":8082"
+
+jwt:
+  secret: "secret-test"
+  expiration: 3600
+
+spotify:
+  client_id: ${CLIENT_ID}
+  client_secret: ${CLIENT_SECRET}
