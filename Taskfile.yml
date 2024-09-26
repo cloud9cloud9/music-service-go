@@ -27,6 +27,11 @@ tasks:
     cmds:
       - "docker-compose down"
 
+  migrate-create:
+    desc: "Migrate create"
+    cmds:
+      - 'migrate create -ext sql -dir ./schema initial_setup'
+
   migrate-up:
     desc: "Migrate up"
     cmds:
@@ -37,3 +42,8 @@ tasks:
     desc: "Migrate down"
     cmds:
       - 'migrate -path ./schema -database "mysql://root:root22@tcp(127.0.0.1:3306)/music" down'
+
+  test:
+    desc: "go tests"
+    cmds:
+      - 'go test ./... -v'

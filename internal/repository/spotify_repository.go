@@ -7,16 +7,16 @@ import (
 	"music-service/pkg/logging"
 )
 
-type SpotifyRepository struct {
-	storage *sql.DB
-	log     *logging.LogrusLogger
-}
-
 var (
 	musicNotFound    = errors.New("no rows in result set")
 	playlistNotFound = errors.New("playlist not found")
 	permissionDenied = errors.New("user does not own this playlist")
 )
+
+type SpotifyRepository struct {
+	storage *sql.DB
+	log     *logging.LogrusLogger
+}
 
 func NewSpotifyRepository(
 	storage *sql.DB,
@@ -140,7 +140,7 @@ func (s *SpotifyRepository) DeleteSongFromPlaylist(userId, playlistId int, songI
 }
 
 func scanRowsIntoSong(rows *sql.Rows) (*models.Song, error) {
-	song := new(models.Song)
+	var song models.Song
 	err := rows.Scan(
 		&song.ID,
 		&song.Title,
@@ -156,5 +156,5 @@ func scanRowsIntoSong(rows *sql.Rows) (*models.Song, error) {
 	if err != nil {
 		return nil, err
 	}
-	return song, nil
+	return &song, nil
 }

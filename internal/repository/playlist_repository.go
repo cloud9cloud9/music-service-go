@@ -159,7 +159,7 @@ func (p *PlayListRepository) DeletePlaylistById(userId int, playlistId int) erro
 }
 
 func scanRowsIntoPlayList(rows *sql.Rows) (*models.Playlist, error) {
-	playlist := new(models.Playlist)
+	var playlist models.Playlist
 	err := rows.Scan(
 		&playlist.ID,
 		&playlist.UserId,
@@ -168,5 +168,5 @@ func scanRowsIntoPlayList(rows *sql.Rows) (*models.Playlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	return playlist, nil
+	return &playlist, nil
 }

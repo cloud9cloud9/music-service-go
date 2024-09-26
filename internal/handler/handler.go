@@ -12,6 +12,7 @@ const (
 	apiPath              = "/api/v1"
 	login                = "/login"
 	register             = "/register"
+	logout               = "/logout"
 	ping                 = "/ping"
 	playlist             = "/playlist"
 	playlistById         = "/playlist/{id}"
@@ -39,6 +40,7 @@ func (h *Handler) RegisterRoutes(router chi.Router) {
 
 		r.With(h.logRequest).Post(login, h.HandleLogin)
 		r.With(h.logRequest).Post(register, h.HandleRegister)
+		r.With(h.userIdentity, h.logRequest).Post(logout, h.LogoutHandler)
 
 		r.With(h.userIdentity, h.logRequest).Get(ping, h.HandlePing)
 

@@ -35,7 +35,7 @@ func NewServer(
 
 func (s *Server) Run() error {
 	router := chi.NewRouter()
-	repo := repository.NewRepository(s.db, s.cfg, s.log)
+	repo := repository.NewRepository(s.db, s.log)
 	services := service.NewService(repo, s.client, s.cfg.JWT.Expiration, s.cfg.JWT.Secret)
 	hand := handler.NewHandler(services, s.log)
 	hand.RegisterRoutes(router)

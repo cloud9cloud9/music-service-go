@@ -216,5 +216,7 @@ func (h *Handler) HandleDeletePlaylistById(writer http.ResponseWriter, request *
 	}
 
 	h.log.Info("HANDLER: playlist deleted: ", playlistId)
-	utils.WriteJSON(writer, http.StatusOK, nil)
+	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
+		"message": "playlist deleted",
+	})
 }

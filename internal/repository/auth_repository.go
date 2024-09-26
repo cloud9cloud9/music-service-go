@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"music-service/internal/config"
 	"music-service/internal/models"
 	"music-service/pkg/logging"
 )
@@ -15,18 +14,15 @@ var (
 
 type AuthRepository struct {
 	storage *sql.DB
-	cfg     *config.Config
 	log     *logging.LogrusLogger
 }
 
 func NewAuthRepository(
 	storage *sql.DB,
-	cfg *config.Config,
 	log *logging.LogrusLogger,
 ) *AuthRepository {
 	return &AuthRepository{
 		storage: storage,
-		cfg:     cfg,
 		log:     log,
 	}
 }
@@ -127,7 +123,7 @@ func (a *AuthRepository) GetUserByUsernameAndPassword(username string, password 
 }
 
 func scanRowsIntoUser(rows *sql.Rows) (*models.User, error) {
-	user := new(models.User)
+	var user models.User
 
 	err := rows.Scan(
 		&user.ID,
@@ -139,5 +135,5 @@ func scanRowsIntoUser(rows *sql.Rows) (*models.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }

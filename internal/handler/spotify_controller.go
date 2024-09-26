@@ -63,10 +63,6 @@ func (h *Handler) HandleGetTracksFromPlaylist(writer http.ResponseWriter, reques
 
 	track, err := h.services.Song.GetAllSongsFromPlaylist(userId, playlistId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			http.Error(writer, "Track not found in playlist: ", http.StatusNotFound)
-			return
-		}
 		utils.WriteError(writer, http.StatusInternalServerError, err)
 		return
 	}
@@ -156,5 +152,7 @@ func (h *Handler) HandleDeleteTrackFromPlaylist(writer http.ResponseWriter, requ
 	}
 
 	h.log.Info("HANDLER: track removed from playlist")
-	utils.WriteJSON(writer, http.StatusOK, "Track removed from playlist")
+	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
+		"message": "Track removed from playlist",
+	})
 }

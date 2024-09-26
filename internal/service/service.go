@@ -19,6 +19,8 @@ type Authorization interface {
 	CreateUser(user *models.User) error
 	ParseToken(accessToken string) (int, error)
 	CreateToken(username, password string) (string, error)
+	InvalidateToken(userID int) error
+	IsTokenValid(token string) (bool, error)
 }
 
 type PlayList interface {
@@ -38,7 +40,7 @@ type Song interface {
 
 func NewService(repo *repository.Repository, client *spotify.Client, exp int64, secret string) *Service {
 	return &Service{
-		Authorization: NewAuthService(repo.Authorization, secret, exp),
+		Authorization: NewAuthService(repo.Authorization, secret, exp, repo.Token),
 		PlayList:      NewPlaylistService(repo.PlayList),
 		Song:          NewSpotifyService(repo.Song, client),
 	}

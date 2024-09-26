@@ -13,6 +13,7 @@ import (
 var (
 	errInvalidCredentials = errors.New("invalid credentials")
 	internalServerError   = errors.New("internal server error")
+	errUnauthorized       = errors.New("user is unauthorized")
 )
 
 // HandleLogin
@@ -124,5 +125,35 @@ func (h *Handler) HandleRegister(writer http.ResponseWriter, request *http.Reque
 	h.log.Info("HANDLER: user created: ", input)
 	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
 		"status": "success",
+	})
+}
+
+// LogoutHandler
+// @Summary Logout
+// @Tags auth
+// @Description User logout
+// @ID logout
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} map[string]string "status"
+// @Failure 500 {object} error "internal Server Error"
+// @Router /api/v1/logout [post]
+func (h *Handler) LogoutHandler(writer http.ResponseWriter, request *http.Request) {
+	userId, err := getUserId(request.Context())
+	if userId == 0 || err != nil {
+		h.log.Error("HANDLER: error getting user id: ", err)
+		utils.WriteError(writer, http.StatusInternalServerError, errUnauthorized)
+		return
+	}
+
+	err = h.services.Authorization.InvalidateToken(userId)
+	if err != nil {
+		h.log.Error("HANDLER: error invalidating token: ", err)
+		utils.WriteError(writer, http.StatusInternalServerError, internalServerError)
+		return
+	}
+
+	utils.WriteJSON(writer, http.StatusOK, map[string]string{
+		"status": "successfully logged out",
 	})
 }

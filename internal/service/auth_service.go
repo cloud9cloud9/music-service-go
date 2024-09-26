@@ -14,29 +14,32 @@ var (
 )
 
 type AuthService struct {
-	repo       repository.Authorization
+	authRepo   repository.Authorization
+	tokenRepo  repository.Token
 	secret     string
 	expiration int64
 }
 
 func NewAuthService(
-	repo repository.Authorization,
+	authRepo repository.Authorization,
 	secret string,
 	expiration int64,
+	tokenRepo repository.Token,
 ) *AuthService {
 	return &AuthService{
-		repo:       repo,
+		authRepo:   authRepo,
 		secret:     secret,
 		expiration: expiration,
+		tokenRepo:  tokenRepo,
 	}
 }
 
 func (a *AuthService) GetUserByEmail(email string) (*models.User, error) {
-	return a.repo.GetUserByEmail(email)
+	return a.authRepo.GetUserByEmail(email)
 }
 
 func (a *AuthService) CreateUser(user *models.User) error {
-	return a.repo.CreateUser(user)
+	return a.authRepo.CreateUser(user)
 }
 
 func (a *AuthService) ParseToken(accessToken string) (int, error) {
@@ -60,7 +63,7 @@ func (a *AuthService) ParseToken(accessToken string) (int, error) {
 }
 
 func (a *AuthService) CreateToken(username, password string) (string, error) {
-	user, err := a.repo.GetUserByUsernameAndPassword(username, password)
+	user, err := a.authRepo.GetUserByUsernameAndPassword(username, password)
 	if err != nil {
 		return "", err
 	}
@@ -74,5 +77,29 @@ func (a *AuthService) CreateToken(username, password string) (string, error) {
 		user.ID,
 	})
 
-	return token.SignedString([]byte(a.secret))
+	signedToken, err := token.SignedString([]byte(a.secret))
+	if err != nil {
+		return "", err
+	}
+
+	dbToken := models.Token{
+		Token:     signedToken,
+		ExpiresAt: time.Now().Add(expiration),
+		UserID:    user.ID,
+	}
+
+	err = a.tokenRepo.SaveToken(dbToken)
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
+}
+
+func (a *AuthService) InvalidateToken(userID int) error {
+	return a.tokenRepo.InvalidateToken(userID)
+}
+
+func (a *AuthService) IsTokenValid(token string) (bool, error) {
+	return a.tokenRepo.IsTokenValid(token)
 }

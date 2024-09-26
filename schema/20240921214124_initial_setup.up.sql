@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS playlists (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
-CREATE TABLE songs (
+CREATE TABLE IF NOT EXISTS songs (
     id VARCHAR(255) PRIMARY KEY,
     title VARCHAR(100) NOT NULL,
     artist VARCHAR(100) NOT NULL,
@@ -28,10 +28,20 @@ CREATE TABLE songs (
     external_url VARCHAR(255)
 );
 
-CREATE TABLE playlist_songs (
+CREATE TABLE IF NOT EXISTS playlist_songs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
     playlist_id INT NOT NULL,
     song_id VARCHAR(255) NOT NULL,
-    PRIMARY KEY (playlist_id, song_id),
     FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,
     FOREIGN KEY (song_id) REFERENCES songs(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
+    user_id INT UNSIGNED NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

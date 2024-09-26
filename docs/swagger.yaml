@@ -99,6 +99,27 @@ paths:
       summary: User Login
       tags:
       - auth
+  /api/v1/logout:
+    post:
+      consumes:
+      - application/json
+      description: User logout
+      operationId: logout
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: internal Server Error
+          schema: {}
+      summary: Logout
+      tags:
+      - auth
   /api/v1/register:
     post:
       consumes:

@@ -79,6 +79,35 @@ func (mr *MockAuthorizationMockRecorder) GetUserByEmail(email interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockAuthorization)(nil).GetUserByEmail), email)
 }
 
+// InvalidateToken mocks base method.
+func (m *MockAuthorization) InvalidateToken(userID int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InvalidateToken", userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InvalidateToken indicates an expected call of InvalidateToken.
+func (mr *MockAuthorizationMockRecorder) InvalidateToken(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InvalidateToken", reflect.TypeOf((*MockAuthorization)(nil).InvalidateToken), userID)
+}
+
+// IsTokenValid mocks base method.
+func (m *MockAuthorization) IsTokenValid(token string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsTokenValid", token)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsTokenValid indicates an expected call of IsTokenValid.
+func (mr *MockAuthorizationMockRecorder) IsTokenValid(token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsTokenValid", reflect.TypeOf((*MockAuthorization)(nil).IsTokenValid), token)
+}
+
 // ParseToken mocks base method.
 func (m *MockAuthorization) ParseToken(accessToken string) (int, error) {
 	m.ctrl.T.Helper()

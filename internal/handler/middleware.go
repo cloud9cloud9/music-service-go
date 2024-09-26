@@ -35,8 +35,20 @@ func (h *Handler) userIdentity(next http.Handler) http.Handler {
 			return
 		}
 
-		if len(headerParts[1]) == 0 {
+		token := headerParts[1]
+		if len(token) == 0 {
 			utils.WriteError(w, http.StatusUnauthorized, errUsersTokenIsEmpty)
+			return
+		}
+
+		isValid, err := h.services.Authorization.IsTokenValid(token)
+		if err != nil {
+			utils.WriteError(w, http.StatusUnauthorized, err)
+			return
+		}
+
+		if !isValid {
+			utils.WriteError(w, http.StatusUnauthorized, errInvalidToken)
 			return
 		}
 
