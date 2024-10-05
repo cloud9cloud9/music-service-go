@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"errors"
 	"github.com/go-chi/chi/v5"
 	"music-service/internal/models"
@@ -54,6 +53,12 @@ func (h *Handler) HandleGetTrackFromSpotify(writer http.ResponseWriter, request 
 // @Security ApiKeyAuth
 func (h *Handler) HandleGetTracksFromPlaylist(writer http.ResponseWriter, request *http.Request) {
 	playlistId, err := strconv.Atoi(chi.URLParam(request, "playlistId"))
+	if err != nil {
+		h.log.Error("HANDLER: error getting playlist id: ", err)
+		utils.WriteError(writer, http.StatusBadRequest, err)
+		return
+	}
+
 	userId, err := getUserId(request.Context())
 	if err != nil {
 		h.log.Error("HANDLER: error getting user id: ", err)
@@ -85,7 +90,14 @@ func (h *Handler) HandleGetTracksFromPlaylist(writer http.ResponseWriter, reques
 // @Security ApiKeyAuth
 func (h *Handler) HandleInsertTrackToPlaylist(writer http.ResponseWriter, request *http.Request) {
 	playlistId, err := strconv.Atoi(chi.URLParam(request, "playlistId"))
+	if err != nil {
+		h.log.Error("HANDLER: error getting playlist id: ", err)
+		utils.WriteError(writer, http.StatusBadRequest, err)
+		return
+	}
+
 	trackId := chi.URLParam(request, "trackId")
+
 	userId, err := getUserId(request.Context())
 	if err != nil {
 		h.log.Error("HANDLER: error getting user id: ", err)
@@ -130,7 +142,13 @@ func (h *Handler) HandleInsertTrackToPlaylist(writer http.ResponseWriter, reques
 // @Router /tracks/{trackId}/playlist/{playlistId} [delete]
 // @Security ApiKeyAuth
 func (h *Handler) HandleDeleteTrackFromPlaylist(writer http.ResponseWriter, request *http.Request) {
-	playlistId, _ := strconv.Atoi(chi.URLParam(request, "playlistId"))
+	playlistId, err := strconv.Atoi(chi.URLParam(request, "playlistId"))
+	if err != nil {
+		h.log.Error("HANDLER: error getting playlist id: ", err)
+		utils.WriteError(writer, http.StatusBadRequest, err)
+		return
+	}
+
 	trackId := chi.URLParam(request, "trackId")
 
 	userId, err := getUserId(request.Context())
@@ -143,16 +161,12 @@ func (h *Handler) HandleDeleteTrackFromPlaylist(writer http.ResponseWriter, requ
 	err = h.services.Song.DeleteSongFromPlaylist(userId, playlistId, trackId)
 	if err != nil {
 		h.log.Error("HANDLER: error deleting track from playlist: ", err)
-		if errors.Is(err, sql.ErrNoRows) {
-			utils.WriteError(writer, http.StatusInternalServerError, errTrackNotFound)
-			return
-		}
-		utils.WriteError(writer, http.StatusInternalServerError, err)
+		utils.WriteError(writer, http.StatusInternalServerError, errTrackNotFound)
 		return
 	}
 
 	h.log.Info("HANDLER: track removed from playlist")
 	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
-		"message": "Track removed from playlist",
+		"id": trackId,
 	})
 }

@@ -65,7 +65,9 @@ func (h *Handler) HandleLogin(writer http.ResponseWriter, request *http.Request)
 	}
 
 	h.log.Info("HANDLER: token created: ", token)
-	utils.WriteJSON(writer, http.StatusOK, map[string]string{"token": token})
+	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
+		"token": token,
+	})
 }
 
 // HandleRegister
@@ -153,7 +155,8 @@ func (h *Handler) LogoutHandler(writer http.ResponseWriter, request *http.Reques
 		return
 	}
 
-	utils.WriteJSON(writer, http.StatusOK, map[string]string{
+	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
 		"status": "successfully logged out",
+		"id":     userId,
 	})
 }

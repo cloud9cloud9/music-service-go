@@ -17,7 +17,7 @@ func TestHandler_HandlePing(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockAuthService := mock_service.NewMockAuthorization(ctrl)
-	h := &Handler{
+	handler := &Handler{
 		services: &service.Service{
 			Authorization: mockAuthService,
 		},
@@ -63,7 +63,7 @@ func TestHandler_HandlePing(t *testing.T) {
 
 			tt.mockSetup()
 
-			h.userIdentity(http.HandlerFunc(h.HandlePing)).ServeHTTP(rec, req)
+			handler.userIdentity(http.HandlerFunc(handler.HandlePing)).ServeHTTP(rec, req)
 
 			res := rec.Result()
 			assert.Equal(t, tt.expectedStatus, res.StatusCode)

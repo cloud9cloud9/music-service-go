@@ -11,13 +11,17 @@ import (
 	"testing"
 )
 
+const (
+	test = "/test"
+)
+
 func TestUserIdentity(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockAuthService := mock_service.NewMockAuthorization(ctrl)
 
-	h := &Handler{
+	handler := &Handler{
 		services: &service.Service{
 			Authorization: mockAuthService,
 		},
@@ -66,7 +70,7 @@ func TestUserIdentity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/test", nil)
+			req := httptest.NewRequest(http.MethodGet, test, nil)
 			if tt.authHeader != "" {
 				req.Header.Set(authHeader, tt.authHeader)
 			}
@@ -82,7 +86,7 @@ func TestUserIdentity(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 			})
 
-			h.userIdentity(nextHandler).ServeHTTP(rec, req)
+			handler.userIdentity(nextHandler).ServeHTTP(rec, req)
 
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 		})
@@ -93,6 +97,8 @@ func TestLogRequest(t *testing.T) {
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	h := &Handler{log: logging.NewLogger()}
-	h.logRequest(nextHandler).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/test", nil))
+	handler := &Handler{
+		log: logging.NewLogger(),
+	}
+	handler.logRequest(nextHandler).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, test, nil))
 }

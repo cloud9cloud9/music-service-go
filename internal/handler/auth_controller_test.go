@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"music-service/internal/models"
 	"music-service/internal/security"
 	"music-service/internal/service"
@@ -34,7 +35,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 		input          models.RegisterDto
 		mockSetup      func()
 		expectedStatus int
-		expectedBody   map[string]interface{}
+		expectedBody   string
 	}{
 		{
 			name: "successful registration",
@@ -48,7 +49,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 				mockAuthorization.EXPECT().CreateUser(gomock.Any()).Return(nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   map[string]interface{}{"status": "success"},
+			expectedBody:   `{"status": "success"}`,
 		},
 		{
 			name: "user already exists",
@@ -61,7 +62,7 @@ func TestHandler_HandleRegister(t *testing.T) {
 				mockAuthorization.EXPECT().GetUserByEmail("existing@example.com").Return(&models.User{}, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   map[string]interface{}{"error": "User with email existing@example.com already exists"},
+			expectedBody:   `{"error": "User with email existing@example.com already exists"}`,
 		},
 		{
 			name: "error hashing password",
@@ -75,26 +76,27 @@ func TestHandler_HandleRegister(t *testing.T) {
 				mockAuthorization.EXPECT().CreateUser(gomock.Any()).Return(internalServerError)
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   map[string]interface{}{"error": "internal server error"},
+			expectedBody:   `{"error": "internal server error"}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
-
 			body, _ := json.Marshal(tt.input)
 			req := httptest.NewRequest("POST", register, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
 
-			rr := httptest.NewRecorder()
-			handler.HandleRegister(rr, req)
+			tt.mockSetup()
 
-			assert.Equal(t, tt.expectedStatus, rr.Code)
+			http.HandlerFunc(handler.HandleRegister).ServeHTTP(rec, req)
 
-			var responseBody map[string]interface{}
-			json.Unmarshal(rr.Body.Bytes(), &responseBody)
-			assert.Equal(t, tt.expectedBody, responseBody)
+			res := rec.Result()
+
+			assert.Equal(t, tt.expectedStatus, res.StatusCode)
+
+			require.Equal(t, tt.expectedStatus, rec.Code)
+			require.JSONEq(t, tt.expectedBody, rec.Body.String())
 		})
 	}
 }
@@ -118,7 +120,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 		input          interface{}
 		mockSetup      func()
 		expectedStatus int
-		expectedBody   map[string]string
+		expectedBody   string
 	}{
 		{
 			name: "Success",
@@ -135,14 +137,14 @@ func TestHandler_HandleLogin(t *testing.T) {
 				mockAuthService.EXPECT().CreateToken("testuser", user.Password).Return("token123", nil)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   map[string]string{"token": "token123"},
+			expectedBody:   `{"token": "token123"}`,
 		},
 		{
 			name:           "Error parsing JSON",
 			input:          "{invalid_json}",
 			mockSetup:      func() {},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   nil,
+			expectedBody:   `{"error": "invalid parsing JSON"}`,
 		},
 		{
 			name: "User not found",
@@ -154,7 +156,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 				mockAuthService.EXPECT().GetUserByEmail("notfound@example.com").Return(nil, errors.New("user not found"))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   nil,
+			expectedBody:   `{"error": "internal server error"}`,
 		},
 		{
 			name: "Invalid credentials",
@@ -170,7 +172,7 @@ func TestHandler_HandleLogin(t *testing.T) {
 				mockAuthService.EXPECT().GetUserByEmail("test@example.com").Return(user, nil)
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedBody:   nil,
+			expectedBody:   `{"error": "invalid credentials"}`,
 		},
 		{
 			name: "Error creating token",
@@ -187,28 +189,26 @@ func TestHandler_HandleLogin(t *testing.T) {
 				mockAuthService.EXPECT().CreateToken("testuser", user.Password).Return("", errors.New("token creation error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   nil,
+			expectedBody:   `{"error": "internal server error"}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
-
 			body, _ := json.Marshal(tt.input)
 			req := httptest.NewRequest(http.MethodPost, login, bytes.NewBuffer(body))
 			rec := httptest.NewRecorder()
 
-			handler.HandleLogin(rec, req)
+			tt.mockSetup()
+
+			http.HandlerFunc(handler.HandleLogin).ServeHTTP(rec, req)
 
 			res := rec.Result()
+
 			assert.Equal(t, tt.expectedStatus, res.StatusCode)
 
-			if tt.expectedBody != nil {
-				var responseBody map[string]string
-				json.NewDecoder(res.Body).Decode(&responseBody)
-				assert.Equal(t, tt.expectedBody, responseBody)
-			}
+			require.Equal(t, tt.expectedStatus, rec.Code)
+			require.JSONEq(t, tt.expectedBody, rec.Body.String())
 		})
 	}
 }
@@ -218,7 +218,7 @@ func TestHandler_LogoutHandler(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockAuthService := mock_service.NewMockAuthorization(ctrl)
-	h := &Handler{
+	handler := &Handler{
 		services: &service.Service{
 			Authorization: mockAuthService,
 		},
@@ -230,7 +230,7 @@ func TestHandler_LogoutHandler(t *testing.T) {
 		userId         int64
 		mockSetup      func()
 		expectedStatus int
-		expectedBody   map[string]string
+		expectedBody   string
 	}{
 		{
 			name:   "Success",
@@ -241,14 +241,14 @@ func TestHandler_LogoutHandler(t *testing.T) {
 				mockAuthService.EXPECT().InvalidateToken(1).Return(nil).Times(1)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody:   map[string]string{"status": "successfully logged out"},
+			expectedBody:   `{"status":"successfully logged out", "id":1}`,
 		},
 		{
 			name:           "Error getting user ID (User ID is 0)",
 			userId:         0,
 			mockSetup:      func() {},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   map[string]string{"error": "user is unauthorized"},
+			expectedBody:   `{"error": "user is unauthorized"}`,
 		},
 		{
 			name:   "Error invalidating token",
@@ -259,7 +259,7 @@ func TestHandler_LogoutHandler(t *testing.T) {
 				mockAuthService.EXPECT().InvalidateToken(1).Return(errors.New("token invalidation error")).Times(1)
 			},
 			expectedStatus: http.StatusInternalServerError,
-			expectedBody:   nil,
+			expectedBody:   `{"error": "internal server error"}`,
 		},
 	}
 
@@ -278,22 +278,16 @@ func TestHandler_LogoutHandler(t *testing.T) {
 			rec := httptest.NewRecorder()
 
 			if tt.userId == 0 {
-				http.HandlerFunc(h.LogoutHandler).ServeHTTP(rec, req)
+				http.HandlerFunc(handler.LogoutHandler).ServeHTTP(rec, req)
 			} else {
-				h.userIdentity(http.HandlerFunc(h.LogoutHandler)).ServeHTTP(rec, req)
+				handler.userIdentity(http.HandlerFunc(handler.LogoutHandler)).ServeHTTP(rec, req)
 			}
 
 			res := rec.Result()
 			assert.Equal(t, tt.expectedStatus, res.StatusCode)
 
-			if tt.expectedBody != nil {
-				var responseBody map[string]string
-				err := json.NewDecoder(res.Body).Decode(&responseBody)
-				if err != nil {
-					t.Fatalf("Error decoding response body: %v", err)
-				}
-				assert.Equal(t, tt.expectedBody, responseBody)
-			}
+			require.Equal(t, tt.expectedStatus, rec.Code)
+			require.JSONEq(t, tt.expectedBody, rec.Body.String())
 		})
 	}
 }

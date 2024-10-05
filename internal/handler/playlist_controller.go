@@ -23,6 +23,7 @@ import (
 // @Security ApiKeyAuth
 func (h *Handler) HandleCreatePlaylist(writer http.ResponseWriter, request *http.Request) {
 	var input models.CreatePlaylistDto
+
 	userId, err := getUserId(request.Context())
 	if err != nil {
 		h.log.Error("HANDLER: error getting user id: ", err)
@@ -109,7 +110,7 @@ func (h *Handler) HandleGetPlaylistById(writer http.ResponseWriter, request *htt
 		return
 	}
 
-	playlistId, err := strconv.Atoi(chi.URLParam(request, "id"))
+	playlistId, err := strconv.Atoi(chi.URLParam(request, "playlistId"))
 	if err != nil {
 		h.log.Error("HANDLER: error getting playlist id: ", err)
 		utils.WriteError(writer, http.StatusBadRequest, err)
@@ -158,7 +159,7 @@ func (h *Handler) HandleUpdatePlaylistById(writer http.ResponseWriter, request *
 		return
 	}
 
-	playlistId, err := strconv.Atoi(chi.URLParam(request, "id"))
+	playlistId, err := strconv.Atoi(chi.URLParam(request, "playlistId"))
 	if err != nil {
 		h.log.Error("HANDLER: error getting playlist id: ", err)
 		utils.WriteError(writer, http.StatusBadRequest, err)
@@ -201,7 +202,7 @@ func (h *Handler) HandleDeletePlaylistById(writer http.ResponseWriter, request *
 		return
 	}
 
-	playlistId, err := strconv.Atoi(chi.URLParam(request, "id"))
+	playlistId, err := strconv.Atoi(chi.URLParam(request, "playlistId"))
 	if err != nil {
 		h.log.Error("HANDLER: error getting playlist id: ", err)
 		utils.WriteError(writer, http.StatusBadRequest, err)
@@ -217,6 +218,6 @@ func (h *Handler) HandleDeletePlaylistById(writer http.ResponseWriter, request *
 
 	h.log.Info("HANDLER: playlist deleted: ", playlistId)
 	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
-		"message": "playlist deleted",
+		"id": playlistId,
 	})
 }

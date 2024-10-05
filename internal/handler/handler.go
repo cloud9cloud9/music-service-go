@@ -15,7 +15,7 @@ const (
 	logout               = "/logout"
 	ping                 = "/ping"
 	playlist             = "/playlist"
-	playlistById         = "/playlist/{id}"
+	playlistById         = "/playlist/{playlistId}"
 	trackFromSpotify     = "/tracks/{trackId}"
 	trackFromPlayList    = "/tracks/playlist/{playlistId}"
 	insertAndDeleteTrack = "/tracks/{trackId}/playlist/{playlistId}"

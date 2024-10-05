@@ -40,7 +40,7 @@ func (s *SpotifyRepository) GetAllSongsFromPlaylist(userId, playlistId int) ([]*
 	`
 	rows, err := s.storage.Query(query, playlistId, userId)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			s.log.Error("REPOSITORY: no songs in playlist")
 			return nil, musicNotFound
 		}
@@ -71,7 +71,7 @@ func (s *SpotifyRepository) CreateSong(userId, playlistId int, song *models.Song
 	err := s.storage.QueryRow(query, playlistId).Scan(&playlistOwner)
 	if err != nil {
 		s.log.Error("REPOSITORY: get playlist owner:", err)
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			s.log.Error("REPOSITORY: playlist not found:", err)
 			return "", playlistNotFound
 		}
@@ -115,7 +115,7 @@ func (s *SpotifyRepository) DeleteSongFromPlaylist(userId, playlistId int, songI
 	err := s.storage.QueryRow(query, playlistId).Scan(&playlistOwner)
 	if err != nil {
 		s.log.Error("REPOSITORY: get playlist owner:", err)
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return playlistNotFound
 		}
 		return err
