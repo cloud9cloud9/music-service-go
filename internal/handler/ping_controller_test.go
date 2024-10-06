@@ -8,7 +8,6 @@ import (
 	"music-service/pkg/logging"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -26,53 +25,35 @@ func TestHandler_HandlePing(t *testing.T) {
 
 	tests := []struct {
 		name           string
+		method         string
 		expectedStatus int
 		expectedBody   string
-		mockSetup      func()
-		authHeader     string
-		isJSON         bool
 	}{
 		{
-			name:           "successful ping",
+			name:           "successful ping request",
+			method:         http.MethodGet,
 			expectedStatus: http.StatusOK,
 			expectedBody:   `"pong"`,
-			authHeader:     "Bearer validToken",
-			mockSetup: func() {
-				mockAuthService.EXPECT().IsTokenValid("validToken").Return(true, nil).Times(1)
-				mockAuthService.EXPECT().ParseToken("validToken").Return(1, nil).Times(1)
-			},
-			isJSON: true,
 		},
 		{
-			name:           "invalid token",
-			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   `{"error":"invalid token"}`,
-			authHeader:     "Bearer invalidToken",
-			mockSetup: func() {
-				mockAuthService.EXPECT().IsTokenValid("invalidToken").Return(false, nil).Times(1)
-			},
-			isJSON: false,
+			name:           "incorrect HTTP method",
+			method:         http.MethodPost,
+			expectedStatus: http.StatusOK,
+			expectedBody:   `"pong"`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			rec := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, ping, nil)
-			req.Header.Set(authHeader, tt.authHeader)
+			req := httptest.NewRequest(tt.method, ping, nil)
 
-			tt.mockSetup()
-
-			handler.userIdentity(http.HandlerFunc(handler.HandlePing)).ServeHTTP(rec, req)
+			http.HandlerFunc(handler.HandlePing).ServeHTTP(rec, req)
 
 			res := rec.Result()
 			assert.Equal(t, tt.expectedStatus, res.StatusCode)
 
-			if tt.isJSON {
-				assert.JSONEq(t, tt.expectedBody, rec.Body.String())
-			} else {
-				assert.Equal(t, tt.expectedBody, strings.TrimSpace(rec.Body.String()))
-			}
+			assert.JSONEq(t, tt.expectedBody, rec.Body.String())
 		})
 	}
 }

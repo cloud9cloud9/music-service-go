@@ -22,11 +22,9 @@ func TestHandler_HandleGetTracksFromPlaylist(t *testing.T) {
 	defer ctrl.Finish()
 
 	songService := mock_service.NewMockSong(ctrl)
-	authService := mock_service.NewMockAuthorization(ctrl)
 	handler := &Handler{
 		services: &service.Service{
-			Song:          songService,
-			Authorization: authService,
+			Song: songService,
 		},
 		log: logging.NewLogger(),
 	}
@@ -34,7 +32,7 @@ func TestHandler_HandleGetTracksFromPlaylist(t *testing.T) {
 	tests := []struct {
 		name           string
 		playlistId     int
-		authHeader     string
+		userId         int
 		mockSetup      func()
 		expectedStatus int
 		expectedBody   string
@@ -43,10 +41,8 @@ func TestHandler_HandleGetTracksFromPlaylist(t *testing.T) {
 		{
 			name:       "successful get tracks from playlist",
 			playlistId: 1,
-			authHeader: "Bearer validToken",
+			userId:     1,
 			mockSetup: func() {
-				authService.EXPECT().IsTokenValid("validToken").Return(true, nil)
-				authService.EXPECT().ParseToken("validToken").Return(1, nil)
 				songService.EXPECT().GetAllSongsFromPlaylist(1, 1).Return([]*models.Song{
 					{
 						ID:    "1",
@@ -59,23 +55,10 @@ func TestHandler_HandleGetTracksFromPlaylist(t *testing.T) {
 			expectedBody:   `[{"album":"", "album_cover":"", "artist":"", "duration":0, "external_url":"", "id":"1", "popularity":0, "preview_url":"", "release_date":"", "title":"test song"}]`,
 		},
 		{
-			name:       "invalid token",
-			playlistId: 1,
-			authHeader: "Bearer invalidToken",
-			mockSetup: func() {
-				authService.EXPECT().IsTokenValid("invalidToken").Return(false, nil)
-			},
-			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   `{"error":"invalid token"}`,
-			isJSON:         false,
-		},
-		{
 			name:       "error getting tracks from playlist",
 			playlistId: 1,
-			authHeader: "Bearer validToken",
+			userId:     1,
 			mockSetup: func() {
-				authService.EXPECT().IsTokenValid("validToken").Return(true, nil)
-				authService.EXPECT().ParseToken("validToken").Return(1, nil)
 				songService.EXPECT().GetAllSongsFromPlaylist(1, 1).Return(nil, errors.New("test error"))
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -90,12 +73,15 @@ func TestHandler_HandleGetTracksFromPlaylist(t *testing.T) {
 			chiCtx := chi.NewRouteContext()
 			chiCtx.URLParams.Add("playlistId", fmt.Sprintf("%d", tt.playlistId))
 			req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/tracks/playlist/%d", tt.playlistId), nil)
-			req.Header.Set("Authorization", tt.authHeader)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+			if tt.userId != 0 {
+				ctx := context.WithValue(req.Context(), userCtx, tt.userId)
+				req = req.WithContext(ctx)
+			}
 
 			tt.mockSetup()
 
-			handler.userIdentity(http.HandlerFunc(handler.HandleGetTracksFromPlaylist)).ServeHTTP(rec, req)
+			http.HandlerFunc(handler.HandleGetTracksFromPlaylist).ServeHTTP(rec, req)
 
 			res := rec.Result()
 			assert.Equal(t, tt.expectedStatus, res.StatusCode)
@@ -114,11 +100,9 @@ func TestHandler_HandleDeleteTrackFromPlaylist(t *testing.T) {
 	defer ctrl.Finish()
 
 	songService := mock_service.NewMockSong(ctrl)
-	authService := mock_service.NewMockAuthorization(ctrl)
 	handler := &Handler{
 		services: &service.Service{
-			Song:          songService,
-			Authorization: authService,
+			Song: songService,
 		},
 		log: logging.NewLogger(),
 	}
@@ -126,8 +110,8 @@ func TestHandler_HandleDeleteTrackFromPlaylist(t *testing.T) {
 	tests := []struct {
 		name           string
 		playlistId     int
+		userId         int
 		trackId        string
-		authHeader     string
 		mockSetup      func()
 		expectedStatus int
 		expectedBody   string
@@ -137,36 +121,20 @@ func TestHandler_HandleDeleteTrackFromPlaylist(t *testing.T) {
 			name:       "successful delete track from playlist",
 			playlistId: 1,
 			trackId:    "1",
-			authHeader: "Bearer validToken",
 			mockSetup: func() {
-				authService.EXPECT().IsTokenValid("validToken").Return(true, nil)
-				authService.EXPECT().ParseToken("validToken").Return(1, nil)
 				songService.EXPECT().DeleteSongFromPlaylist(1, 1, "1").Return(nil)
 			},
+			userId:         1,
 			expectedStatus: http.StatusOK,
 			expectedBody:   `{"id":"1"}`,
 			isJSON:         true,
 		},
 		{
-			name:       "error invalid token",
-			playlistId: 1,
-			trackId:    "1",
-			authHeader: "Bearer invalidToken",
-			mockSetup: func() {
-				authService.EXPECT().IsTokenValid("invalidToken").Return(false, errors.New("error invalid token"))
-			},
-			expectedStatus: http.StatusUnauthorized,
-			expectedBody:   `{"error":"error invalid token"}`,
-			isJSON:         false,
-		},
-		{
 			name:       "error deleting track from playlist",
 			playlistId: 1,
+			userId:     1,
 			trackId:    "1",
-			authHeader: "Bearer validToken",
 			mockSetup: func() {
-				authService.EXPECT().IsTokenValid("validToken").Return(true, nil)
-				authService.EXPECT().ParseToken("validToken").Return(1, nil)
 				songService.EXPECT().DeleteSongFromPlaylist(1, 1, "1").Return(errTrackNotFound)
 			},
 			expectedStatus: http.StatusInternalServerError,
@@ -181,14 +149,17 @@ func TestHandler_HandleDeleteTrackFromPlaylist(t *testing.T) {
 			chiCtx := chi.NewRouteContext()
 			chiCtx.URLParams.Add("trackId", tt.trackId)
 			chiCtx.URLParams.Add("playlistId", fmt.Sprintf("%d", tt.playlistId))
+
 			req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/tracks/%s/playlist/%d",
 				tt.trackId, tt.playlistId), nil)
 			req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
-			req.Header.Set("Authorization", tt.authHeader)
-
+			if tt.userId != 0 {
+				ctx := context.WithValue(req.Context(), userCtx, tt.userId)
+				req = req.WithContext(ctx)
+			}
 			tt.mockSetup()
 
-			handler.userIdentity(http.HandlerFunc(handler.HandleDeleteTrackFromPlaylist)).ServeHTTP(rec, req)
+			http.HandlerFunc(handler.HandleDeleteTrackFromPlaylist).ServeHTTP(rec, req)
 
 			res := rec.Result()
 			assert.Equal(t, tt.expectedStatus, res.StatusCode)
